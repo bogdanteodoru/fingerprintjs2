@@ -112,6 +112,7 @@
       keys = this.hasLiedOsKey(keys);
       keys = this.hasLiedBrowserKey(keys);
       keys = this.touchSupportKey(keys);
+      keys = this.webRTCKey(keys);
       var that = this;
       this.fontsKey(keys, function(newKeys){
         var values = [];
@@ -610,6 +611,12 @@
       }
       return keys;
     },
+    webRTCKey: function(keys) {
+      if(!this.options.excludeWebRTC) {
+        keys.push({key: "local_ip_address", value: this.getLocalIpAddress()});
+      }
+      return keys;
+    },
     hasSessionStorage: function () {
       try {
         return !!window.sessionStorage;
@@ -1069,6 +1076,25 @@
       } catch(e) { /* squelch */ }
       if (!gl) { gl = null; }
       return gl;
+    },
+    getLocalIpAddress: function() {
+      // compatibility for firefox and chrome
+      var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection,
+          pc = new RTCPeerConnection({iceServers:[]}),
+          noop = function(){};
+
+      // create a bogus data channel
+      pc.createDataChannel("");
+
+      // create offer and set local description
+      pc.createOffer(pc.setLocalDescription.bind(pc), noop);
+
+      // listen for candidate events
+      pc.onicecandidate = function(ice) {
+        pc.onicecandidate = noop;
+        if(!ice || !ice.candidate || !ice.candidate.candidate) return null;
+        return /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
+      };
     },
     each: function (obj, iterator, context) {
       if (obj === null) {
