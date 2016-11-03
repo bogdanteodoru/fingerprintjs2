@@ -1080,21 +1080,25 @@
     getLocalIpAddress: function() {
       // compatibility for firefox and chrome
       var RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection,
-          pc = new RTCPeerConnection({iceServers:[]}),
+          pc = RTCPeerConnection ? new RTCPeerConnection({iceServers:[]}) : null,
           noop = function(){};
 
-      // create a bogus data channel
-      pc.createDataChannel("");
+      if (pc) {
+        // create a bogus data channel
+        pc.createDataChannel("");
 
-      // create offer and set local description
-      pc.createOffer(pc.setLocalDescription.bind(pc), noop);
+        // create offer and set local description
+        pc.createOffer(pc.setLocalDescription.bind(pc), noop);
 
-      // listen for candidate events
-      pc.onicecandidate = function(ice) {
-        pc.onicecandidate = noop;
-        if(!ice || !ice.candidate || !ice.candidate.candidate) return null;
-        return /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
-      };
+        // listen for candidate events
+        pc.onicecandidate = function(ice) {
+          pc.onicecandidate = noop;
+          if(!ice || !ice.candidate || !ice.candidate.candidate) return null;
+          return /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/.exec(ice.candidate.candidate)[1];
+        };
+      }
+
+      return null;
     },
     each: function (obj, iterator, context) {
       if (obj === null) {
